@@ -2,6 +2,7 @@
 name = "http-server-rs"
 description = "HTTP server implementation in Rust without any dependencies, design inspired by Java's com.sun.net.httpserver.HttpServer"
 authors = ["sootysplash"]
+repository = "https://github.com/sootysplash/http-server-rs"
 version = "0.1.0"
 edition = "2021"
 license = "GPL-3.0"
