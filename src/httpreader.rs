@@ -195,10 +195,10 @@ impl HttpReader {
         response.insert(String::from("Access-Control-Allow-Credentials"), String::from("true"));
     }
     
-    pub fn write_response_headers(&mut self, response_code : i32, body_length : usize) {
+    pub fn write_response_headers(&mut self, response_code : i32, body_length : usize) -> Result<usize, Error> {
         
         if self.sent_headers {
-            return;
+            return Ok(0);
         }
         
         let start_line = "HTTP/1.1 ".to_owned() + response_code.to_string().as_str() + HttpConstants::get_code_text(response_code) + "\r\n";
@@ -217,14 +217,15 @@ impl HttpReader {
         }
         response_bytes.append(&mut "\r\n".to_string().into_bytes());
         
-        self.tcpstream.write(response_bytes.as_mut_slice()).unwrap();
+        let result = self.tcpstream.write(response_bytes.as_mut_slice());
         
         self.sent_headers = true;
         
+        return result;
     }
     
-    pub fn write_response_body(&mut self, body : &[u8]) {
-        self.tcpstream.write(body).unwrap();
+    pub fn write_response_body(&mut self, body : &[u8]) -> Result<usize, Error> {
+        return self.tcpstream.write(body);
     }
     
 }

@@ -1,33 +1,35 @@
-use std::{collections::BTreeMap, io::Error, net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener}};
+use std::{collections::BTreeMap, io::Error, net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream}, sync::{Arc, Mutex}};
 
-use crate::httpreader::HttpReader;
+use crate::{connectionthreadpool::ThreadPool, httpreader::HttpReader};
 
-pub struct HttpServer<F>
-where
-    F: FnMut(HttpReader),
+
+pub struct HttpServer
 {
     port_num : u16,
     listener : Option<TcpListener>,
-    handler : BTreeMap<String, F>,
+    handler : BTreeMap<String, HttpHandlerWrap>,
+    started : bool,
+    threadpool : ThreadPool,
 }
 
-impl<F> HttpServer<F>
-where
-    F: FnMut(HttpReader),
+impl HttpServer
 {
     
-    pub fn new(port : u16, initial_path : &str, initial_handler : F) -> HttpServer<F> {
-        let mut server : HttpServer<F> =  HttpServer {
+    pub fn new(port : u16, thread_count : usize) -> Self {
+        let server : HttpServer = HttpServer {
             port_num : port,
             listener : Option::None,
             handler : BTreeMap::new(),
+            started : false,
+            threadpool : ThreadPool::new(thread_count),
         };
-        server.add_endpoint(initial_path, initial_handler);
         return server;
     }
     
-    pub fn add_endpoint(&mut self, path : &str, handler : F) {
-        self.handler.insert(String::from(path), handler);
+    pub fn add_endpoint<F>(&mut self, path : &str, handler : F) 
+    where F : Sized + FnMut(HttpReader) + Send + Sync + 'static {
+        let value = Arc::new(Mutex::new(handler));
+        self.handler.insert(String::from(path), value);
     }
     
     pub fn init_listener(&mut self) -> Result<TcpListener, Error> {
@@ -50,31 +52,45 @@ where
             }
         }
         
-        for tcpstream in self.listener.as_ref().unwrap().incoming() {
-            if tcpstream.is_ok() {
-                let pre_check_http_reader = HttpReader::new(tcpstream.unwrap());
-                if !pre_check_http_reader.is_ok() {
-                    continue;
-                }
-                let http_reader = pre_check_http_reader.unwrap();
-                let handler = self.handler.get_mut(&http_reader.get_request_path());
-                if handler.is_none() {
-                    let fallback_key = &String::from("*");
-                    let fallback = self.handler.get_mut(fallback_key);
-                    if fallback.is_some() {
-                        let unwrapped = fallback.unwrap();
-                        (unwrapped)(http_reader);
-                    } else {
-                        http_reader.respond_404();
+        if !self.started {        
+            self.started = true;
+            let listener_copy : &TcpListener = self.listener.as_ref().unwrap();
+            let map_copy = self.handler.clone();
+            for tcpstream in listener_copy.incoming() {
+                let map_copy_copy = map_copy.clone();
+                self.threadpool.execute(move || {
+                    if tcpstream.is_ok() {
+                        HttpServer::handle_connection(tcpstream.unwrap(), map_copy_copy);
                     }
-                } else {
-                    let unwrapped = handler.unwrap();
-                    (unwrapped)(http_reader);
-                }
-                
+                });
             }
         }
-        return Result::Ok(true); // should never be reached?
+        
+        return Result::Ok(true);
+    }
+    
+    fn handle_connection(tcpstream : TcpStream, mut handler_map : BTreeMap<String, HttpHandlerWrap>) {
+        let pre_check_http_reader = HttpReader::new(tcpstream);
+        if pre_check_http_reader.is_ok() {
+            let http_reader = pre_check_http_reader.unwrap();
+            let handler = handler_map.get_mut(&http_reader.get_request_path());
+            if handler.is_none() {
+                let fallback_key = &String::from("*");
+                let fallback = handler_map.get_mut(fallback_key);
+                if fallback.is_some() {
+                    let mut unwrapped = fallback.unwrap().lock().unwrap();
+                    (unwrapped)(http_reader);
+                } else {
+                    http_reader.respond_404();
+                }
+            } else {
+                let mut unwrapped = handler.unwrap().lock().unwrap();
+                (unwrapped)(http_reader);
+            }
+        }
     }
     
 }
+
+type HttpHandler = dyn FnMut(HttpReader) + Send + Sync;
+type HttpHandlerWrap = Arc<Mutex<HttpHandler>>;
