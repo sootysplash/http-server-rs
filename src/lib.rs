@@ -3,11 +3,11 @@ use std::{thread, time::Duration};
 use httpconstants::HttpConstants;
 use httpserver::HttpServer;
 
-mod connectionthreadpool;
-mod httpreader;
-mod httpconstants;
-mod httpserver;
-mod httperror;
+pub mod connectionthreadpool;
+pub mod httpreader;
+pub mod httpconstants;
+pub mod httpserver;
+pub mod httperror;
 
 fn main() {
     println!("{:?}", HttpConstants::get_formatted_date());
