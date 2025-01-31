@@ -12,7 +12,7 @@ pub mod httperror;
 fn main() {
     println!("{:?}", HttpConstants::get_formatted_date());
     
-    let mut http_server : HttpServer = HttpServer::new(9000, 4);
+    let mut http_server : HttpServer = HttpServer::new(9000, 4, 10000);
     
     http_server.add_endpoint("/", | mut reader | {
         let mut vec_response : Vec<u8> = Vec::new();

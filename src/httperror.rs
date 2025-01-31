@@ -70,6 +70,7 @@ pub enum HttpErrorType {
     IncorrectContentLength,
     IncorrectHeaderFormat,
     EndpointNotFound,
+    ClientTimeout,
 }
 
 pub const BAD_REQUEST_LINE : HttpError = HttpError::new(HttpErrorType::BadRequestLine, HTTP_BAD_REQUEST, "Bad Request Line");
@@ -78,3 +79,4 @@ pub const INCOMPLETE_BODY : HttpError = HttpError::new(HttpErrorType::Incomplete
 pub const INCORRECT_CONTENT_LENGTH : HttpError = HttpError::new(HttpErrorType::IncorrectContentLength, HTTP_BAD_REQUEST, "Incorrect Content Length");
 pub const INCORRECT_HEADER_FORMAT : HttpError = HttpError::new(HttpErrorType::IncorrectHeaderFormat, HTTP_BAD_REQUEST, "Incorrect Header Format");
 pub const ENDPOINT_NOT_FOUND : HttpError = HttpError::new(HttpErrorType::EndpointNotFound, HTTP_NOT_FOUND, "Endpoint Not Found");
+pub const CLIENT_TIMEOUT : HttpError = HttpError::new(HttpErrorType::ClientTimeout, HTTP_CLIENT_TIMEOUT, "Client Timed Out");

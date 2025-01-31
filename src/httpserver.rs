@@ -10,18 +10,20 @@ pub struct HttpServer
     handler : BTreeMap<String, HttpHandlerWrap>,
     started : bool,
     threadpool : ThreadPool,
+    max_client_timeout_ms : u64,
 }
 
 impl HttpServer
 {
     
-    pub fn new(port : u16, thread_count : usize) -> Self {
+    pub fn new(port : u16, thread_count : usize, max_client_timeout_ms : u64) -> Self {
         let server : HttpServer = HttpServer {
             port_num : port,
             listener : Option::None,
             handler : BTreeMap::new(),
             started : false,
             threadpool : ThreadPool::new(thread_count),
+            max_client_timeout_ms,
         };
         return server;
     }
@@ -55,12 +57,13 @@ impl HttpServer
         if !self.started {        
             self.started = true;
             let listener_copy : &TcpListener = self.listener.as_ref().unwrap();
+            let max_client_timeout_ms = self.max_client_timeout_ms;
             let map_copy = self.handler.clone();
             for tcpstream in listener_copy.incoming() {
                 let map_copy_copy = map_copy.clone();
                 self.threadpool.execute(move || {
                     if tcpstream.is_ok() {
-                        HttpServer::handle_connection(tcpstream.unwrap(), map_copy_copy);
+                        HttpServer::handle_connection(tcpstream.unwrap(), map_copy_copy, max_client_timeout_ms);
                     }
                 });
             }
@@ -69,8 +72,8 @@ impl HttpServer
         return Result::Ok(true);
     }
     
-    fn handle_connection(tcpstream : TcpStream, mut handler_map : BTreeMap<String, HttpHandlerWrap>) {
-        let pre_check_http_reader = HttpReader::new(tcpstream);
+    fn handle_connection(tcpstream : TcpStream, mut handler_map : BTreeMap<String, HttpHandlerWrap>, max_client_timeout_ms : u64) {
+        let pre_check_http_reader = HttpReader::new(tcpstream, max_client_timeout_ms);
         if pre_check_http_reader.is_ok() {
             let http_reader = pre_check_http_reader.unwrap();
             let handler = handler_map.get_mut(&http_reader.get_request_path());
