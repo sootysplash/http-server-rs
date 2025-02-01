@@ -31,20 +31,20 @@ impl HttpConstants {
             }
         }
         
-        
-        let format_days = days + 0;
-        let format_months = months + 1;
+        let format_months = months + 1; // during calc we start at 0;
         let week_day = (3 // thursday (5) - 2
             + total_days) % 7;
         
+        
+        
         return format!("{}, {} {} {} {}:{}:{} {}", 
             HttpConstants::get_day_name(week_day),
-            format_days,
+            HttpConstants::buffer_number(days),
             HttpConstants::get_month_name(format_months),
             years,
-            hours,
-            minutes,
-            seconds,
+            HttpConstants::buffer_number(hours),
+            HttpConstants::buffer_number(minutes),
+            HttpConstants::buffer_number(seconds),
             "UTC");
     }
     
@@ -103,6 +103,16 @@ impl HttpConstants {
                 panic!("Invalid day number: {}", week_day);
             }
         }).to_string()
+    }
+    
+    fn buffer_number(number : u64) -> String {
+        let format_number;
+        if number <= 9 {
+            format_number = String::from("0") + number.to_string().as_str();
+        } else {
+            format_number = number.to_string();
+        }
+        return format_number;
     }
     
     pub fn get_code_text(code : i32) -> &'static str {
