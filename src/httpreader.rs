@@ -211,7 +211,7 @@ impl HttpReader {
         
         let response_headers = self.get_response_headers();
         response_headers.insert("Content-Length".to_string(), body_length.to_string());
-        response_headers.insert("Date".to_string(), HttpConstants::get_formatted_date());
+        response_headers.insert("Date".to_string(), HttpConstants::get_current_formatted_date());
         
         let mut response_bytes : Vec<u8> = Vec::new();
         response_bytes.append(&mut start_line.clone().into_bytes());

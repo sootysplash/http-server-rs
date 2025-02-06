@@ -5,12 +5,16 @@ pub struct HttpConstants {
 
 impl HttpConstants {
     
-    pub fn get_formatted_date() -> String {
-        
+    pub fn get_current_formatted_date() -> String { 
         // let add_days = 0 * 86400;
         let total_seconds = SystemTime::now().duration_since(SystemTime::UNIX_EPOCH).unwrap().as_secs()
             // + add_days
             ;
+        return HttpConstants::get_formatted_date(total_seconds);
+    }
+    
+    pub fn get_formatted_date(total_seconds : u64) -> String {
+        
         let seconds = total_seconds % 60;
         let mut minutes = total_seconds / 60;
         let mut hours = minutes / 60;

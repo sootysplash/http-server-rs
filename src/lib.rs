@@ -10,7 +10,7 @@ pub mod httpserver;
 pub mod httperror;
 
 fn main() {
-    println!("{:?}", HttpConstants::get_formatted_date());
+    println!("{:?}", HttpConstants::get_current_formatted_date());
     
     let mut http_server : HttpServer = HttpServer::new(9000, 4, 10000);
     
