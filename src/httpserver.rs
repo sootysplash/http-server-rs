@@ -1,28 +1,29 @@
 use std::{collections::BTreeMap, io::Error, net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream}, sync::{Arc, Mutex}};
 
-use crate::{connectionthreadpool::ThreadPool, httpreader::HttpReader};
+use crate::{executor::Executor, httpreader::HttpReader};
 
 
-pub struct HttpServer
+pub struct HttpServer<T : Executor>
 {
     port_num : u16,
     listener : Option<TcpListener>,
     handler : BTreeMap<String, HttpHandlerWrap>,
     started : bool,
-    threadpool : ThreadPool,
+    executor : T,
     max_client_timeout_ms : u64,
 }
 
-impl HttpServer
+impl<T : Executor> HttpServer<T>
+
 {
     
-    pub fn new(port : u16, thread_count : usize, max_client_timeout_ms : u64) -> Self {
-        let server : HttpServer = HttpServer {
+    pub fn new(port : u16, max_client_timeout_ms : u64, executor : T) -> Self {
+        let server : HttpServer<T> = HttpServer {
             port_num : port,
             listener : Option::None,
             handler : BTreeMap::new(),
             started : false,
-            threadpool : ThreadPool::new(thread_count),
+            executor,
             max_client_timeout_ms,
         };
         return server;
@@ -61,9 +62,9 @@ impl HttpServer
             let map_copy = self.handler.clone();
             for tcpstream in listener_copy.incoming() {
                 let map_copy_copy = map_copy.clone();
-                self.threadpool.execute(move || {
+                self.executor.execute(move || {
                     if tcpstream.is_ok() {
-                        HttpServer::handle_connection(tcpstream.unwrap(), map_copy_copy, max_client_timeout_ms);
+                        HttpServer::<T>::handle_connection(tcpstream.unwrap(), map_copy_copy, max_client_timeout_ms);
                     }
                 });
             }

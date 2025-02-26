@@ -1,5 +1,6 @@
 use std::{thread, time::Duration};
 
+use connectionthreadpool::ThreadPool;
 use httpconstants::HttpConstants;
 use httpserver::HttpServer;
 
@@ -8,11 +9,12 @@ pub mod httpreader;
 pub mod httpconstants;
 pub mod httpserver;
 pub mod httperror;
+pub mod executor;
 
 fn main() {
     println!("{:?}", HttpConstants::get_current_formatted_date());
     
-    let mut http_server : HttpServer = HttpServer::new(9000, 4, 10000);
+    let mut http_server : HttpServer<ThreadPool> = HttpServer::new(9000, 10000, ThreadPool::new(16));
     
     http_server.add_endpoint("/", | mut reader | {
         let mut vec_response : Vec<u8> = Vec::new();

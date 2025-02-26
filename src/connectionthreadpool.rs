@@ -1,8 +1,10 @@
-use std::{sync::{mpsc::{self, Receiver}, Arc, Mutex}, thread::{self, JoinHandle}};
+use std::{sync::{mpsc::{self, Receiver, Sender}, Arc, Mutex}, thread::{self, JoinHandle}};
+
+use crate::executor::Executor;
 
 
 pub struct ThreadPool {
-    sender: Option<mpsc::Sender<Job>>,
+    sender: Option<Sender<Job>>,
     workers: Vec<Worker>,
 }
 
@@ -25,7 +27,11 @@ impl ThreadPool {
         return ThreadPool {sender, workers};
     }
     
-    pub fn execute<F>(&self, job : F)
+}
+
+impl Executor for ThreadPool {
+    
+    fn execute<F>(&self, job : F)
     where F : FnOnce() + Send + 'static {
         self.sender.as_ref().unwrap().send(Box::new(job)).unwrap();
     }
