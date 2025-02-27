@@ -36,6 +36,10 @@ impl Executor for ThreadPool {
         self.sender.as_ref().unwrap().send(Box::new(job)).unwrap();
     }
     
+    fn execute_mut<F>(&mut self, job : F)
+    where F : FnOnce() + Send + 'static {
+        self.sender.as_ref().unwrap().send(Box::new(job)).unwrap();
+    }
 }
 
 impl Drop for ThreadPool {
