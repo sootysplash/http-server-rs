@@ -62,7 +62,7 @@ impl<T : Executor> HttpServer<T>
             let map_copy = self.handler.clone();
             for tcpstream in listener_copy.incoming() {
                 let map_copy_copy = map_copy.clone();
-                self.executor.execute(move || {
+                self.executor.execute_mut(move || {
                     if tcpstream.is_ok() {
                         HttpServer::<T>::handle_connection(tcpstream.unwrap(), map_copy_copy, max_client_timeout_ms);
                     }
