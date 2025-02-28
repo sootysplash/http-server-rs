@@ -154,6 +154,10 @@ impl HttpReader {
         return Option::None;
         
     }
+    
+    pub fn get_stream(&mut self) -> &mut TcpStream {
+        return &mut self.tcpstream;
+    }
 
     pub fn get_peer_address(&self) -> Result<SocketAddr, Error> {
         return self.tcpstream.peer_addr();
