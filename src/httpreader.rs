@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, io::{Error, Read, Write}, net::TcpStream, time::Duration};
+use std::{collections::BTreeMap, io::{Error, Read, Write}, net::{SocketAddr, TcpStream}, time::Duration};
 use crate::httperror::*;
 
 use crate::{httpconstants::HttpConstants, httperror::HttpErrorWrapper};
@@ -153,6 +153,18 @@ impl HttpReader {
         
         return Option::None;
         
+    }
+    
+    pub fn get_peer_address(&self) -> Result<SocketAddr, Error> {
+        return self.tcpstream.peer_addr();
+    }
+        
+    pub fn get_local_address(&self) -> Result<SocketAddr, Error> {
+        return self.tcpstream.local_addr();
+    }
+    
+    pub fn borrow_stream(&mut self) -> &mut TcpStream {
+        return &mut self.tcpstream;
     }
     
     pub fn consume_stream(self) -> TcpStream {
