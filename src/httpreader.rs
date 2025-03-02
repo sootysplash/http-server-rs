@@ -1,4 +1,4 @@
-use std::{collections::BTreeMap, io::{Error, Read, Write}, net::{SocketAddr, TcpStream}, time::Duration};
+use std::{collections::BTreeMap, io::{Error, Read, Write}, net::TcpStream, time::Duration};
 use crate::httperror::*;
 
 use crate::{httpconstants::HttpConstants, httperror::HttpErrorWrapper};
@@ -12,13 +12,13 @@ pub struct HttpReader {
     req_body : BTreeMap<i32, u8>,
     response_headers : BTreeMap<String, String>,
     sent_headers : bool,
-    tcpstream : Option<TcpStream>,
+    tcpstream : TcpStream,
     max_client_timeout_ms : u64,
 }
 
 #[allow(dead_code)]
 impl HttpReader {
-    pub fn new(input : TcpStream, max_client_timeout_ms : u64) -> Result<HttpReader, HttpErrorWrapper> {
+    pub fn new(tcpstream : TcpStream, max_client_timeout_ms : u64) -> Result<HttpReader, HttpErrorWrapper> {
         let mut this = HttpReader {
             req_method: String::from(""),
             req_path : String::from(""),
@@ -28,7 +28,7 @@ impl HttpReader {
             req_body : BTreeMap::new(),
             response_headers : BTreeMap::new(),
             sent_headers : false,
-            tcpstream : Option::Some(input),
+            tcpstream,
             max_client_timeout_ms,
         };
         let result = this.read_lines();
@@ -46,7 +46,7 @@ impl HttpReader {
         let mut current_str : Vec<u8> = Vec::new();
         let mut index = 0;
         let mut buf = [0u8];
-        let mut stream = self.tcpstream.as_ref().expect("Impossible");
+        let stream = &mut self.tcpstream;
         stream.set_read_timeout(Some(Duration::from_millis(self.max_client_timeout_ms))).unwrap();
         loop {
 
@@ -156,19 +156,11 @@ impl HttpReader {
     }
     
     pub fn consume_stream(self) -> TcpStream {
-        return self.tcpstream.expect("Impossible?");
-    }
-
-    pub fn get_peer_address(&self) -> Result<SocketAddr, Error> {
-        return self.tcpstream.as_ref().expect("Stream was consumed").peer_addr();
-    }
-    
-    pub fn get_local_address(&self) -> Result<SocketAddr, Error> {
-        return self.tcpstream.as_ref().expect("Stream was consumed").local_addr();
+        return self.tcpstream;
     }
     
     pub fn respond_404(&self) {
-        ENDPOINT_NOT_FOUND.to_wrapped_respond(self.tcpstream.as_ref().expect("Stream was consumed"));
+        ENDPOINT_NOT_FOUND.to_wrapped_respond(&self.tcpstream);
     }
     
     // request
@@ -227,11 +219,7 @@ impl HttpReader {
         }
         response_bytes.append(&mut "\r\n".to_string().into_bytes());
         
-        let stream = self.tcpstream.as_ref();
-        if stream.is_none() {
-            return Ok(0);
-        }
-        let result = stream.unwrap().write(response_bytes.as_mut_slice());
+        let result = self.tcpstream.write(response_bytes.as_mut_slice());
         
         self.sent_headers = true;
         
@@ -239,7 +227,7 @@ impl HttpReader {
     }
     
     pub fn write_response_body(&mut self, body : &[u8]) -> Result<usize, Error> {
-        return self.tcpstream.as_ref().expect("Stream was consumed").write(body);
+        return self.tcpstream.write(body);
     }
     
 }
