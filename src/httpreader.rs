@@ -133,20 +133,21 @@ impl HttpReader {
                 return Option::Some(INCORRECT_CONTENT_LENGTH.to_wrapped_respond(stream));
             }
             let amount_to_read = parsed.unwrap();
-            let mut buf: Vec<u8> = Vec::new();
-            buf.resize(amount_to_read, 0);
-            let buf = buf.as_mut_slice();
-            
-            let result = stream.read(buf);
-            
-            if result.is_err() || result.unwrap() != amount_to_read {
-                return Option::Some(INCOMPLETE_BODY.to_wrapped_respond(stream));
-            }
-            
-            for i in 0..amount_to_read  {
-                self.req_body.insert(i as i32, *buf.get(i).unwrap());
-            }
-            
+            if amount_to_read != 0 {
+                let mut buf: Vec<u8> = Vec::new();
+                buf.resize(amount_to_read, 0);
+                let buf = buf.as_mut_slice();
+                
+                let result = stream.read(buf);
+                
+                if result.is_err() || result.unwrap() != amount_to_read {
+                    return Option::Some(INCOMPLETE_BODY.to_wrapped_respond(stream));
+                }
+                
+                for i in 0..amount_to_read  {
+                    self.req_body.insert(i as i32, *buf.get(i).unwrap());
+                }
+            }            
         }
         
         let _body = String::from_utf8_lossy(self.get_request_body().as_slice()).to_string();
