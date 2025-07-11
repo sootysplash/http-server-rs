@@ -121,11 +121,11 @@ impl HttpReader {
             let value = header.1;
             let value = value.split_at(value.len() - 2).0; // remove newline
             
-            self.req_headers.insert(key.to_string(), value.to_string());
+            self.req_headers.insert(key.to_string().to_lowercase(), value.to_string());
             i += 1;
         }        
         
-        let content_length = self.req_headers.get("Content-Length");
+        let content_length = self.req_headers.get("content-length");
         if content_length.is_some() {
             let unwrapped_length = content_length.unwrap();
             let parsed = usize::from_str_radix(unwrapped_length, 10);
