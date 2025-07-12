@@ -243,4 +243,8 @@ impl HttpReader {
         return self.tcpstream.write(body);
     }
     
+    pub fn get_tcpstream(&mut self) -> &mut TcpStream {
+        return &mut self.tcpstream;
+    }
+    
 }
