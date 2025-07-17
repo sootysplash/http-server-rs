@@ -14,7 +14,8 @@ pub mod executor;
 fn main() {
     println!("{:?}", HttpConstants::get_current_formatted_date());
     
-    let mut http_server : HttpServer<ThreadPool> = HttpServer::new(9000, 10000, ThreadPool::new(16));
+
+    let mut http_server : HttpServer<ThreadPool> = HttpServer::new(10000, ThreadPool::new(16));
     
     http_server.add_endpoint("/", | mut reader | {
         let mut vec_response : Vec<u8> = Vec::new();
@@ -31,6 +32,6 @@ fn main() {
         reader.write_response_body(vec_response.as_slice()).unwrap_or_default(); 
     });
     
-    http_server.start().unwrap();
+    http_server.start("0.0.0.0:9000").unwrap();
     
 }

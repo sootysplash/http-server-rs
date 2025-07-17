@@ -1,11 +1,10 @@
-use std::{collections::BTreeMap, io::Error, net::{IpAddr, Ipv4Addr, SocketAddr, TcpListener, TcpStream}, sync::{Arc, Mutex}};
+use std::{collections::BTreeMap, io::Error, net::{TcpListener, TcpStream, ToSocketAddrs}, sync::{Arc, Mutex}};
 
 use crate::{executor::Executor, httpreader::HttpReader};
 
 
 pub struct HttpServer<T : Executor>
 {
-    port_num : u16,
     listener : Option<TcpListener>,
     handler : BTreeMap<String, HttpHandlerWrap>,
     started : bool,
@@ -17,9 +16,8 @@ impl<T : Executor> HttpServer<T>
 
 {
     
-    pub fn new(port : u16, max_client_timeout_ms : u64, executor : T) -> Self {
+    pub fn new(max_client_timeout_ms : u64, executor : T) -> Self {
         let server : HttpServer<T> = HttpServer {
-            port_num : port,
             listener : Option::None,
             handler : BTreeMap::new(),
             started : false,
@@ -35,8 +33,8 @@ impl<T : Executor> HttpServer<T>
         self.handler.insert(String::from(path), value);
     }
     
-    pub fn init_listener(&mut self) -> Result<TcpListener, Error> {
-        let listener = TcpListener::bind(SocketAddr::new(IpAddr::V4(Ipv4Addr::new(127, 0, 0, 1)), self.port_num));
+    pub fn init_listener<SA : ToSocketAddrs>(&mut self, socket_address : SA) -> Result<TcpListener, Error> {
+        let listener = TcpListener::bind(socket_address);
         if listener.is_err() {
             return Result::Err(listener.unwrap_err());
         } else {
@@ -47,9 +45,9 @@ impl<T : Executor> HttpServer<T>
         }
     }
     
-    pub fn start(&mut self) -> Result<bool, Error> {
+    pub fn start<SA : ToSocketAddrs>(&mut self, socket_address : SA) -> Result<bool, Error> {
         if self.listener.is_none() {
-            let init = self.init_listener();
+            let init = self.init_listener(socket_address);
             if init.is_err() {
                 return Result::Err(init.unwrap_err());
             }
